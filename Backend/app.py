@@ -1,20 +1,30 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, redirect
+from flask import url_for, session
 import mysql.connector
-from models import db, User
+from models import db, User, Expense
+import secrets
+from flask_login import login_required
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
-app.config['SECRET_KEY'] = 'your_secret_key'  # Change this to a random secret key
+
+app.config['SECRET_KEY'] = secrets.token_urlsafe(16)
+app.config['SQLALCHEMY_DATABASE_URI'] = (
+        'mysql+mysqlconnector://moneytrail:Moneytrail123.'
+        '@localhost/moneytrail_db'
+)
+
+#Initializing the Flask app with SQLAlchemy
 db.init_app(app)
 
 # Create database tables
 with app.app_context():
     db.create_all()
+
 # Establish MySQL database connection
 db = mysql.connector.connect(
     host='localhost',
     user='moneytrail',
-    password='branham@27',
+    password='Moneytrail123.',
     database='moneytrail_db'
 )
 cursor = db.cursor()
@@ -56,6 +66,14 @@ def login():
 def logout():
     session.pop('user_id', None)
     return jsonify({'message': 'Logout successful'}), 200
+
+@app.route('/home', methods=['GET'])
+@login_required
+def dashboard():
+    ''' Returns user to home page '''
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    return 'Financial clarity at your fingertips!'
 
 @app.route('/expenses', methods=['POST'])
 def add_expense():
